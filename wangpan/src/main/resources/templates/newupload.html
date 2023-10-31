@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="../static/css/upload.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/webuploader.css">
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <script src="../static/js/webuploader.js"></script>
+    <script src="../static/js/axios.js"></script>
+</head>
+<body>
+<div>
+    <div id="uploader" class="wu-example">
+        <div id="centerPage">
+            <div id="functionChoose">
+                <div id="folder"></div>
+                <div id="upload" onclick="listShow()"></div>
+                <div id="info"></div>
+            </div>
+            <div id="functionPage">
+                <div id="buttons">
+                    <div class="btns">
+                        <div id="picker">上传文件到此</div>
+                        <button onclick="uploadStop()">暂停上传</button>
+                        <button onclick="downloadFile()">下载选中文件</button>
+                        <button onclick="returnFolder()">返回上级文件夹</button>
+                        <button onclick="enterFolder()">进入选中文件夹</button>
+                        <button onclick="newFolder()">新键文件夹</button>
+                        <button onclick="removeFolderFile()">删除当前所选文件</button>
+                        <div id="nowPath">当前目录:/</div>
+                    </div>
+                </div>
+                <div id="folderPage">
+                </div>
+            </div>
+
+        </div>
+        <div id="downUploadList">
+            <div id="thelist" class="uploader-list">
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+<script>
+    /*
+    为什么不移到js文件里去？
+    因为移到文件里webuploader初始化就报错说实话根据swf文件创建有点。。
+
+     */
+
+    class MyFile {
+        constructor(fileName, fileType) {
+            this.fileName = fileName;
+            this.fileType = fileType;
+        }
+
+        toString() {
+            return "文件名:" + this.fileName + " " + "文件类型:" + this.fileType
+        }
+    }
+
+    //当前所在路径
+    var nowFolderPath = '';
+    //目标文件夹
+    var targetFolderName = ''
+    //目标文件夹类型
+    var targetFolderType = ''
+    //装MyFile用于后续生成HTNL元素
+    var nowFileList = [];
+
+
+    window.onload = enterFolder();
+
+    //进入文件夹
+    function enterFolder() {
+        //判断目标文件类型
+        if (targetFolderType === 'file'){
+            alert("不能进入文件")
+            return;
+        }
+        //告诉后端我要进入nowFolderPath文件夹下的folderName文件夹
+        nowFileList = []
+        axios({
+            method: "POST",
+            baseURL: "http://localhost:8080/getFolder",
+            url: "",
+            data: {
+                path: nowFolderPath,
+                folderName: targetFolderName
+            }
+        }).then((request) => {
+
+            for (let index in request.data) {
+                let fileName = request.data[index]
+                if (includeSymbol(fileName, '.')) {
+                    nowFileList.push(new MyFile(fileName, 'file'))
+                } else {
+                    nowFileList.push(new MyFile(fileName, 'folder'))
+                }
+            }
+            console.log("加载完成当前页面:" + nowFileList.toString())
+            //设置当前的文件所在路径
+            if (nowFolderPath === '' && targetFolderName === '') {
+                //当前所在路径为空且没有选目标说明在根目录
+            } else if (nowFolderPath === '' && targetFolderName !== '') {
+                //说明从根目录出发的，有目标说明要进入某文件夹
+                nowFolderPath = targetFolderName
+            } else if (nowFolderPath !== '' && targetFolderName !== '') {
+                //不从根目录出发,进入目标文件夹
+                nowFolderPath = nowFolderPath + "\\" + targetFolderName
+            }
+            //进入新页面刷新目标文件
+            targetFolderName = ""
+            console.log("当前所在路径:" + nowFolderPath)
+            //构建文件图标
+            createFileHTML()
+        })
+    }
+
+    /**
+     * 判断一个字符串里是否包含某个符号
+     * @param string 字符串
+     * @param symbol 符号
+     * @return {boolean} 包含返回true,不包含返回false
+     */
+    function includeSymbol(string, symbol) {
+        for (let i = 0; i < string.length; i++) {
+            if (string[i] === symbol) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 根据 nowFileList(装MyFile类的列表) 生成HTML元素
+     */
+    function createFileHTML() {
+        let $filePage = $('#folderPage')
+        $filePage.empty()
+        let content = '  '
+        for (let i = 0; i < nowFileList.length; i++) {
+            let file = nowFileList[i]
+            content += "<div class=\"folderElement\" " +
+                "id = \"folderElement" + i + "\"" +
+                "style = \"background-color: aliceblue; \" " +
+                "ondblclick=\"operate('" + file.fileName + "','" + file.fileType + "','" + i + "')\">" +
+                "<div class=\"" + file.fileType + "\"></div>" +
+                "<p>" + file.fileName + "</p>" +
+                "</div>\n"
+        }
+        $filePage.append(content)
+
+    }
+
+    //双击事件
+    function operate(fileName, fileType, id) {
+        id = "folderElement" + id
+        let $chooseFolderElement = $("#" + id)
+        if (targetFolderName === '') {
+            //说明当前没选文件
+            $chooseFolderElement.css("background-color", "darkgray")
+            $chooseFolderElement.style
+            targetFolderName = fileName
+            console.log("选中了:" + fileName)
+            //设置所选文件的文件名文件类型
+            targetFolderType = fileType
+            targetFolderName = fileName
+        } else if (targetFolderName !== fileName) {
+            //说明双击的是不同的文件,就刷新一下,把之前选的刷新掉
+            createFileHTML()
+            //刷新后重新获取一次对象
+            $chooseFolderElement = $("#" + id)
+            targetFolderName = fileName
+            console.log("重新选中了:" + fileName)
+            $chooseFolderElement.css("background-color", "darkgray")
+            targetFolderType = fileType
+            targetFolderName = fileName
+        } else {
+            //说明双击的是同一个文件,取消选中状态
+            $chooseFolderElement.css("background-color", "aliceblue")
+            targetFolderName = ''
+            console.log("取消了:" + fileName)
+            //取消选择就把目标文件名和文件类型清空
+            targetFolderType = ''
+            targetFolderName = ''
+        }
+        console.log("当前的目标文件是:" + targetFolderName)
+    }
+
+
+    /**
+     *上传信息是否显示
+     */
+    function listShow() {
+        let $upload = $('#upload')
+        let $list = $('#downUploadList');
+        console.log($list.css('display'))
+        console.log($upload.css("background-color"));
+        if ($list.css('display') === 'none') {
+            $upload.css("background-color", "dimgray")
+            $list.css('display', 'block')
+        } else {
+            $upload.css("background-color", "darkgray")
+            $list.css('display', 'none');
+        }
+    }
+
+    //下载文件
+    function downloadFile() {
+        //判断一下目标文件类型
+        if (targetFolderType === "file") {
+            if (nowFolderPath === '') {
+                window.location.href = 'http://localhost:8080/download' + "/" + targetFolderName
+            }
+            window.location.href = 'http://localhost:8080/download' + "/" + nowFolderPath + "/" + targetFolderName
+        } else {
+            alert("暂不支持下载文件夹")
+        }
+
+    }
+
+
+
+    //新建文件夹
+    function newFolder() {
+        var info = prompt("请输入新建文件夹名称")
+        if (info === null) {
+            //没输入信息就不创建文件夹
+        } else {
+            //输入了就创建
+            axios({
+                method: "POST",
+                baseURL: "http://localhost:8080/createFolder",
+                url: "",
+                data: {
+                    path: nowFolderPath,
+                    folderName: info
+                }
+            }).then((request) => {
+                //刷新
+
+                enterFolder();
+            })
+        }
+
+    }
+
+    //返回上级文件
+    function returnFolder() {
+        //要返回上级就要清空所选，不然会进入选择的文件夹
+        targetFolderName = ''
+        //判断用户是否处于根目录
+        if (nowFolderPath === '') {
+            //处于根目录
+            alert("不能再返回上级了，因为您处于根目录")
+        } else {
+            //将当前目录进行修改
+            //判断当前路径是否包含字符 \
+            if (includeSymbol(nowFolderPath, "\\")) {
+                //包含说明上一级不是根目录也就是当前目录: uu\yy
+                //举例 uu\yy ==> uu 倒序遍历检 去掉 \yy
+                for (let i = nowFolderPath.length - 1; i > -1; i--) {
+                    //如果遍历到 \ 就说明已经遍历到文件分隔符了
+                    if (nowFolderPath[i] === "\\") {
+                        //装剩下的字符
+                        let costChar = ''
+                        //遍历到分隔符就返回剩下的字符
+                        for (let k = 0; k < i; k++) {
+                            //拼接从头开始遍历的字符
+                            costChar += nowFolderPath[k]
+                        }
+                        // 修改成上级目录
+                        nowFolderPath = costChar
+                        //遍历完了就退出循环检测
+                        break;
+                    }
+                    //不是 \ 就继续倒序循环
+                }
+            } else {
+                //不包含说明上级文件就是根目录也就是: uu
+                nowFolderPath = ''
+            }
+            console.log("当前处于:" + nowFolderPath)
+            //刷新
+            enterFolder()
+        }
+
+
+    }
+
+    //删除所选文件
+    function removeFolderFile() {
+        axios({
+            method: "POST",
+            baseURL: "http://localhost:8080/deleteFile",
+            url: "",
+            data: {
+                path: nowFolderPath,
+                folderName: targetFolderName
+            }
+
+        }).then((request) => {
+            //删除后目标文件清空不然下次刷新会进入已删除的空文件
+            targetFolderName = ''
+            // JSON.stringify(request)
+            alert(request.data)
+            //刷新
+            enterFolder()
+        })
+    }
+
+    function uploadStop() {
+        uploader.stop()
+    }
+
+    var uploader = WebUploader.create({
+        auto: true, //选完文件后，是否自动上传
+        // multiple: true, //可以选择多个文件
+        chunked: true,//开启分片上传
+        threads: 10,//上传的并发数
+        method: 'POST',//传输形式
+        chunkSize: 50 * 1024 * 1024, //设置切片最大大小5MB
+        // fileSizeLimit: 1024 * 1024 * 1024 * 10,//验证文件总大小是否超出限制10G
+        // fileSingleSizeLimit: 1024 * 1024 * 1024,//验证单个文件大小是否超过1G
+        fileVal: 'upload',//设置文件上传域的name
+        // swf文件路径
+        swf: '../static/js/Uploader.swf',
+
+        // 文件接收服务端。
+        server: 'http://localhost:8080/upload',
+
+        // 选择文件的按钮。可选。
+        // 内部根据当前运行是创建，可能是input元素，也可能是flash.
+        pick: '#picker',
+
+        // 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
+        resize: false,
+        formData: {
+            path: nowFolderPath
+        }
+
+    });
+
+
+    // 当有文件被添加进队列的时候
+    uploader.on('fileQueued', function (file) {
+        let $list = $("#thelist");
+        $list.append('<div id="' + file.id + '" class="item">' +
+            '<p class="info">' + file.name + '</p>' +
+            '<p class="state">等待上传...</p>' +
+            '</div>');
+    });
+
+    // 文件上传过程中创建进度条实时显示。
+    uploader.on('uploadProgress', function (file, percentage) {
+        var $li = $('#' + file.id),
+            $percent = $li.find('.progress .progress-bar');
+
+        // 避免重复创建
+        if (!$percent.length) {
+            $percent = $('<div class="progress progress-striped active">' +
+                '<div class="progress-bar" role="progressbar" style="width: 0%">' +
+                '</div>' +
+                '</div>').appendTo($li).find('.progress-bar');
+        }
+
+        $li.find('p.state').text('上传中');
+
+        $percent.css('width', percentage * 100 + '%');
+    });
+
+    //文件上传成功
+    uploader.on('uploadSuccess', function (file) {
+        $('#' + file.id).find('p.state').text('已上传');
+    });
+
+    //文件上传失败
+    uploader.on('uploadError', function (file) {
+        $('#' + file.id).find('p.state').text('上传出错');
+    });
+
+    //失败和完成后调用该事件
+    uploader.on('uploadComplete', function (file) {
+        $('#' + file.id).find('.progress').fadeOut();
+    });
+</script>
+</html>

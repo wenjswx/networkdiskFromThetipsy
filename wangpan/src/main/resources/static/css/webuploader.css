@@ -1,0 +1,157 @@
+.webuploader-container {
+    position: relative;
+}
+
+.webuploader-element-invisible {
+    position: absolute !important;
+    clip: rect(1px 1px 1px 1px); /* IE6, IE7 */
+    clip: rect(1px, 1px, 1px, 1px);
+}
+
+.webuploader-pick {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    background: #00b7ee;
+    padding: 10px 15px;
+    color: #fff;
+    text-align: center;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.webuploader-pick-hover {
+    background: #00a2d4;
+}
+
+.webuploader-pick-disable {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+#uploader {
+    width: 1400px;
+    height: 700px;
+    margin: 80px 0 0 180px;
+}
+
+#centerPage {
+    float: left;
+    width: 1100px;
+    height: 700px;
+    background-color: aliceblue;
+    overflow: auto;
+}
+
+#downUploadList {
+    float: right;
+    height: 700px;
+    width: 300px;
+    background-color: #00a2d4;
+    display: none;
+}
+
+#functionChoose {
+    width: 80px;
+    height: 700px;
+    float: left;
+    background-color: darkgray;
+}
+
+#folder {
+    margin: 24px auto;
+    height: 48px;
+    width: 48px;
+    border-radius: 4px;
+    background-repeat: no-repeat;
+    background-image: url("../images/folder.png");
+    background-size: 48px, 48px;
+}
+
+#folderPage {
+    float: left;
+    width: 1020px;
+    height: 600px;
+}
+
+#upload {
+    margin: 24px auto;
+    height: 48px;
+    width: 48px;
+    border-radius: 4px;
+    background-repeat: no-repeat;
+    background-image: url("../images/share.png");
+    background-size: 48px, 48px;
+    background-color: darkgray;
+
+}
+
+#info {
+    margin: 484px auto 24px;
+    height: 48px;
+    width: 48px;
+    border-radius: 4px;
+    background-repeat: no-repeat;
+    background-image: url("../images/info.png");
+    background-size: 48px, 48px;
+    float: revert;
+}
+
+#buttons {
+    float: right;
+    width: 1020px;
+    height: 100px;
+    background-color: azure;
+}
+
+.item p {
+    background-color: beige;
+    margin: 0 0 0 0;
+    padding: 0;
+}
+
+#nowPath {
+    width: 700px;
+    height: 25px;
+}
+
+.folderElement {
+    float: left;
+    margin: 30px;
+}
+
+
+
+#folderPage .folderElement div {
+    height: 70px;
+    width: 70px;
+    background-size: 70px 70px;
+}
+
+#folderPage .folderElement p {
+
+    margin: 0;
+    width: 70px;
+    height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#folderPage .folderElement .folder {
+    background-image: url("../images/folderblack.png");
+
+}
+
+#folderPage .folderElement .file {
+
+    background-image: url("../images/file.png");
+}
+
+#popupDiv {
+    width: 50px;
+    height: 50px;
+    background-color: beige;
+}
+
+
